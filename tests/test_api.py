@@ -5,6 +5,12 @@ import pytest
 from app import api
 
 
+@pytest.fixture(autouse=True)
+def fast_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Tests never sleep: the lookup is stubbed to be instant."""
+    monkeypatch.setattr(api, "personalization_lookup", lambda id_: {"id": id_, "greeting": "hello world"})
+
+
 def test_greeting() -> None:
     assert api.greeting_for("42") == "hello world id:42"
 

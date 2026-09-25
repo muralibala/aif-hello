@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import random
 import time
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
@@ -21,8 +22,24 @@ log.setLevel(logging.INFO)
 _INDEX = Path(__file__).resolve().parent / "index.html"
 
 
+SLOW_LOOKUP_RATE = 0.3
+SLOW_LOOKUP_RANGE_S = (0.150, 0.300)
+
+
+def personalization_lookup(id_: str) -> dict[str, str]:
+    """Fetch the caller's personalization profile.
+
+    Simulates a remote profile service: most calls are instant, but about 30% wait
+    150-300 ms for the upstream, which is longer than the request budget.
+    """
+    if random.random() < SLOW_LOOKUP_RATE:
+        time.sleep(random.uniform(*SLOW_LOOKUP_RANGE_S))
+    return {"id": id_, "greeting": "hello world"}
+
+
 def greeting_for(id_: str) -> str:
-    return f"hello world id:{id_}"
+    profile = personalization_lookup(id_)
+    return f"{profile['greeting']} id:{id_}"
 
 
 def hello_world(id_: str) -> str:
