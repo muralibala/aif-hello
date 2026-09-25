@@ -11,7 +11,8 @@ button{cursor:pointer}#log{margin-top:16px;border-top:1px solid var(--line);padd
 </style></head><body>
 <h1>helloWorld(id)</h1>
 <p class="muted">Calls <code>GET /hello?id=…</code> with a 200 ms timeout. Use "Burst" to send many calls.</p>
-<p><input id="id" value="42" size="8"> <button id="one">Call once</button> <button id="burst">Burst 25</button> <span id="stats" class="muted"></span></p>
+<p><input id="id" value="42" size="8"> <button id="one">Call once</button> <button id="burst">Burst 25</button> <button id="fail">Trigger failure (60 calls)</button> <span id="stats" class="muted"></span></p>
+<p id="hint" class="muted"></p>
 <div id="log"></div>
 <script>
 const log=document.getElementById('log'),stats=document.getElementById('stats');let ok=0,bad=0;
@@ -22,4 +23,10 @@ async function helloWorld(id){const ctl=new AbortController();const t=setTimeout
  catch(e){bad++;line('bad',`>200ms  client timeout (${e.name})`);}finally{clearTimeout(t);}}
 document.getElementById('one').onclick=()=>helloWorld(document.getElementById('id').value);
 document.getElementById('burst').onclick=async()=>{for(let i=0;i<25;i++){await helloWorld(document.getElementById('id').value+'-'+i);}};
+async function serverCall(id){const t0=performance.now();try{const r=await fetch(`/hello?id=${encodeURIComponent(id)}`);const ms=Math.round(performance.now()-t0);const body=await r.json();
+ if(r.ok){ok++;line('ok',`${ms}ms  ${body.message}`);}else{bad++;line('bad',`${ms}ms  HTTP ${r.status}: ${body.error}`);}}catch(e){bad++;line('bad',`network error (${e.name})`);}}
+const failBtn=document.getElementById('fail'),hint=document.getElementById('hint');
+failBtn.onclick=async()=>{failBtn.disabled=true;ok=0;bad=0;log.replaceChildren();hint.textContent='Sending 60 calls with ids 1–60. Each 504 is a TimeoutError in CloudWatch; 3 or more in a minute trips the hello-api-timeouts alarm and starts AIF.';
+ for(let i=1;i<=60;i++){await serverCall(i);}
+ hint.textContent=`Done: ${ok} ok, ${bad} failed. ${bad>=3?'Alarm should fire within 1–2 minutes; watch Slack #aif-shadow and the evidence viewer.':'Fewer than 3 failures; click again.'}`;failBtn.disabled=false;};
 </script></body></html>
