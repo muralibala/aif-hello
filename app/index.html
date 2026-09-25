@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AIF hello demo</title>
+<style>
+:root{--bg:#fff;--fg:#1b1f24;--muted:#57606a;--line:#d0d7de;--ok:#1a7f37;--bad:#cf222e}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--muted:#8b949e;--line:#30363d;--ok:#3fb950;--bad:#f85149}}
+body{margin:0;padding:16px;background:var(--bg);color:var(--fg);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;max-width:720px;margin-inline:auto}
+input,button{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+button{cursor:pointer}#log{margin-top:16px;border-top:1px solid var(--line);padding-top:8px}
+.row{padding:4px 0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}.ok{color:var(--ok)}.bad{color:var(--bad)}.muted{color:var(--muted)}
+</style></head><body>
+<h1>helloWorld(id)</h1>
+<p class="muted">Calls <code>GET /hello?id=…</code> with a 200 ms timeout. Use "Burst" to send many calls.</p>
+<p><input id="id" value="42" size="8"> <button id="one">Call once</button> <button id="burst">Burst 25</button> <span id="stats" class="muted"></span></p>
+<div id="log"></div>
+<script>
+const log=document.getElementById('log'),stats=document.getElementById('stats');let ok=0,bad=0;
+function line(cls,text){const d=document.createElement('div');d.className='row '+cls;d.textContent=text;log.prepend(d);stats.textContent=`ok ${ok} · failed ${bad}`;}
+async function helloWorld(id){const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),200);const t0=performance.now();
+ try{const r=await fetch(`/hello?id=${encodeURIComponent(id)}`,{signal:ctl.signal});const ms=Math.round(performance.now()-t0);const body=await r.json();
+  if(r.ok){ok++;line('ok',`${ms}ms  ${body.message}`);}else{bad++;line('bad',`${ms}ms  HTTP ${r.status}: ${body.error}`);}}
+ catch(e){bad++;line('bad',`>200ms  client timeout (${e.name})`);}finally{clearTimeout(t);}}
+document.getElementById('one').onclick=()=>helloWorld(document.getElementById('id').value);
+document.getElementById('burst').onclick=async()=>{for(let i=0;i<25;i++){await helloWorld(document.getElementById('id').value+'-'+i);}};
+</script></body></html>

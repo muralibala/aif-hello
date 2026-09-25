@@ -1,0 +1,35 @@
+name: deploy
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+env:
+  JSII_SILENCE_WARNING_UNTESTED_NODE_VERSION: "1"
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    concurrency: deploy-aif-hello
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - run: uv sync --all-groups
+      - name: tests
+        run: uv run pytest -q
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+      - name: cdk deploy
+        env:
+          CDK_DEFAULT_ACCOUNT: ${{ vars.AWS_ACCOUNT_ID }}
+          CDK_DEFAULT_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+          AIF_ALARM_TOPIC_ARN: ${{ vars.AIF_ALARM_TOPIC_ARN }}
+        run: npx --yes aws-cdk@2 deploy AifHello --require-approval never --progress events

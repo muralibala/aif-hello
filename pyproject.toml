@@ -1,0 +1,13 @@
+[project]
+name = "aif-hello"
+version = "0.1.0"
+description = "Hello World demo service for AIF: an HTML page calling helloWorld(id) with a 200 ms budget"
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest>=8", "aws-cdk-lib>=2.150", "constructs>=10"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
